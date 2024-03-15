@@ -214,7 +214,6 @@ F.Intrinsic.Control.Else
 V.Local.sTransID.Set(V.Passed.DATA-TRANSID)
 V.Local.sTransSfx.Set("0000")
 V.Local.sPrinter.Set("")
-v.Local.sbin.Set("RECV")
 
 	F.Intrinsic.String.Build("Select Field_1, Field_2, Field_3, Field_4, Field_5, Field_6, Field_7, Field_8, Field_9, Field_10, Field_11, Field_12, Field_13,Field_14,Field_15, Field_16,Trans_Type from WIRELESS_LINE where TRANS_ID = '{0}'",V.Local.sTransID,V.Local.sQuery)
 	Function.ODBC.Connection!Conx.OpenRecordsetRO("rstWIR",V.Local.squery)
@@ -242,7 +241,7 @@ v.Local.sbin.Set("RECV")
 	F.ODBC.Conx!rstWIR.Close
 
 	'validate job-suffix-seq
-	F.Intrinsic.String.Build("Select * FROM V_JOB_OPERATIONS WHERE LMO = 'M' AND JOB = '{0}' AND SUFFIX = '{1}' AND SEQ = '{2}'",V.Local.sJob,V.Local.sSuffix,V.Local.sSeq,V.Local.sQuery)
+	F.Intrinsic.String.Build("Select O.PART, H.LOCATION FROM V_JOB_OPERATIONS O LEFT JOIN V_JOB_HEADER H ON O.JOB=H.JOB AND O.SUFFIX=H.SUFFIX WHERE O.LMO = 'M' AND O.JOB = '{0}' AND O.SUFFIX = '{1}' AND O.SEQ = '{2}'",V.Local.sJob,V.Local.sSuffix,V.Local.sSeq,V.Local.sQuery)
 		Function.ODBC.Connection!Conx.OpenRecordsetRO("rstOPS",V.Local.squery)
 			F.Intrinsic.Control.If(V.ODBC.Conx!rstOPS.EOF,=,True)
 				F.Intrinsic.String.Concat("<====FAILED====> Invalid material seq for JSS: ",V.Local.sJob,v.Local.sSuffix,v.Local.sSeq,V.Local.sResults)
@@ -250,6 +249,7 @@ v.Local.sbin.Set("RECV")
 				f.Intrinsic.Control.CallSub(close)	
 			f.Intrinsic.Control.Else
 				V.Local.sGSSPart.Set(V.ODBC.Conx!rstOPS.FieldValTrim!PART)	
+				V.Local.sPartloc.Set(V.ODBC.Conx!rstOPS.FieldValTrim!LOCATION)
 				'V.Local.sWOestMqty.Set(V.ODBC.Conx!rstOPS.FieldValTrim!HOURS_ESTIMATED)	
 			F.Intrinsic.Control.EndIf
 			F.ODBC.Conx!rstOPS.Close	
@@ -266,10 +266,11 @@ v.Local.sbin.Set("RECV")
 	f.Intrinsic.String.Mid(v.Local.sGSSPart,18,3,v.Local.sPartRev)
 
 	'Validate part number with rev and loc exists
-	F.Intrinsic.String.Build("SELECT PART,LOCATION FROM V_INVENTORY_MSTR WHERE PART = '{0}' AND LOCATION = '{1}'",V.Local.sGSSPart,V.Local.sPartloc,V.local.squery)
+	F.Intrinsic.String.Build("SELECT PART,LOCATION,BIN FROM V_INVENTORY_MSTR WHERE PART = '{0}' AND LOCATION = '{1}'",V.Local.sGSSPart,V.Local.sPartloc,V.local.squery)
 	Function.ODBC.Connection!Conx.OpenRecordsetRO("rstWIR3",V.Local.squery)
 	F.Intrinsic.Control.If(V.ODBC.Conx!rstWIR3.EOF,=,False)
 		'continue and write A10 to wireless tables
+		V.Local.sbin.Set(V.ODBC.Conx!rstWIR3.FieldValTrim!BIN)
 	F.Intrinsic.Control.else
 		'Display error
 		F.Intrinsic.String.Build("FAILED: Part {0} and Location {1} does NOT exist in inventory notify supervisor.",V.Local.sGSSPart,V.Local.sPartloc,V.Local.sResults)
@@ -346,7 +347,7 @@ F.Intrinsic.String.Build("UPDATE WIRELESS_HDR SET ATTEMPTED_FLAG= '' WHERE TRANS
 F.ODBC.Connection!Conx.Execute(V.Local.squery)
 
 'Successful comment back to scanner
-	F.Intrinsic.String.Build("SUCCESSFULL Receipt of Part: {0} Qty: {1} Issued to WO: {2}.",V.Local.sGSSPart,v.Local.sLotQty,v.Local.sJobSuffix,v.Local.sResults)
+	F.Intrinsic.String.Build("SUCCESSFULL Receipt of Part: {0} Serial: {4} Qty: {1} Issued to WO: {2} {3}.",V.Local.sGSSPart,v.Local.sLotQty,v.Local.sJob,V.Local.sJobSuffix,v.Local.sserial,v.Local.sResults)
 	F.Global.Mobile.setcustomresult(v.Caller.CompanyCode,v.Local.sTransID,v.Local.sResults)
 
 F.ODBC.Connection!Conx.Close
@@ -364,5 +365,5 @@ Program.Sub.close.End
 Program.Sub.Comments.Start
 ${$0$}$$}$$}$12:00:00 AM$}$False
 ${$5$}$2.0.0.0$}$2
-${$6$}$bstevens$}$20240313165740084$}$3Pg7+K2MGztoXyjxMVZqWaM5g3GOUsSNufBpXkESEJQYWGBM5E1qmF6fWFS7a+tCeo2gZF4N8GTFDrFCheBhJg==
+${$6$}$bstevens$}$20240315080456767$}$3Pg7+K2MGztoXyjxMVZqWaM5g3GOUsSNufBpXkESEJSYBazhoykQh8h2XLJyE/DALuyNgshUn0+H9oAbn6NiMg==
 Program.Sub.Comments.End
