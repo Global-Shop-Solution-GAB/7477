@@ -347,7 +347,7 @@ F.Intrinsic.String.Build("UPDATE WIRELESS_HDR SET ATTEMPTED_FLAG= '' WHERE TRANS
 F.ODBC.Connection!Conx.Execute(V.Local.squery)
 
 'Successful comment back to scanner
-	F.Intrinsic.String.Build("SUCCESSFULL Receipt of Part: {0} Serial: {4} Qty: {1} Issued to WO: {2} {3}.",V.Local.sGSSPart,v.Local.sLotQty,v.Local.sJob,V.Local.sJobSuffix,v.Local.sserial,v.Local.sResults)
+	F.Intrinsic.String.Build("SUCCESSFULL Receipt of Part: {0} Serial: {4} Qty: {1} Issued to WO: {2} {3}.",V.Local.sGSSPart,v.Local.sLotQty,v.Local.sJob,V.Local.sSuffix,v.Local.sserial,v.Local.sResults)
 	F.Global.Mobile.setcustomresult(v.Caller.CompanyCode,v.Local.sTransID,v.Local.sResults)
 
 F.ODBC.Connection!Conx.Close
@@ -365,5 +365,5 @@ Program.Sub.close.End
 Program.Sub.Comments.Start
 ${$0$}$$}$$}$12:00:00 AM$}$False
 ${$5$}$2.0.0.0$}$2
-${$6$}$bstevens$}$20240315080456767$}$3Pg7+K2MGztoXyjxMVZqWaM5g3GOUsSNufBpXkESEJSYBazhoykQh8h2XLJyE/DALuyNgshUn0+H9oAbn6NiMg==
+${$6$}$bstevens$}$20240315083126589$}$3Pg7+K2MGztoXyjxMVZqWaM5g3GOUsSNufBpXkESEJSYBazhoykQh13UX1iO4AM412IZKpsPd+Cph/ejuKC0kQ==
 Program.Sub.Comments.End
