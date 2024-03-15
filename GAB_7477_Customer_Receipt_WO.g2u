@@ -1,0 +1,368 @@
+﻿Program.Sub.ScreenSU.Start
+Program.Sub.ScreenSU.End
+
+Program.Sub.Preflight.Start
+
+Program.Sub.Preflight.End
+
+Program.Sub.Main.Start
+
+'Programmed for GS Mobile
+'customer Viking Power Technologies div of Prime Downhole
+'by Brady Stevens
+'03/13/2024
+'activate to custom mobile transaction hook 39001-39005
+
+'Stand alone receipt to inventory using A10 transaction - will receive to inventory item master record created
+'then post process hook 31908 for A10 will process a J55 to issue material to WO and print a Issue to WO label 1874 (Codesoft)
+
+F.ODBC.Connection!Conx.OpenCompanyConnection(300)
+
+V.Local.sQuery.Declare(String)
+V.Local.sLabel.Declare(String)
+V.Local.iQuantity.Declare(Long)
+V.Local.sCartonQty.Declare(Long)
+V.Local.sJob.Declare(String)
+V.Local.sSuffix.Declare(String)
+V.Local.sSeq.Declare(String)
+V.Local.sJobSuffix.Declare(String)
+V.Local.sName.Declare(String)
+V.Local.sValue.Declare(String)
+V.Local.sUID.Declare(String)
+V.Local.sUPID.Declare
+V.Local.sUserid.Declare(String)
+V.Local.sPrinter.Declare(String)
+V.Local.sReportName.Declare(String)
+V.Local.sTransID.Declare(String)
+V.Local.sTransSfx.Declare(String)
+V.Local.sPart.Declare(String)
+V.Local.sMPart.Declare(String)
+V.Local.sPartloc.Declare(String)
+V.Local.sPartRev.Declare(String)
+V.Local.sGSSPart.Declare(String)
+V.Local.sDescr1.Declare(String)
+V.Local.sDescr2.Declare(String)
+V.Local.sDescr3.Declare(String)
+V.Local.sCustomer.Declare(String)
+V.Local.sPO.Declare(String)
+V.Local.sSO.Declare(String)
+V.Local.sSOline.Declare(String)
+V.Local.sPrefix.Declare(String)
+V.Local.sTransType.Declare(String)
+V.Local.sDueDate.Declare(String)
+V.Local.sBiRpt.Declare(String)
+V.Local.dateyymmdd.Declare(String)
+V.Local.timemmnnss.Declare(String)
+V.Local.timehhnn.Declare(String)
+V.Local.seqkey.Declare(String)
+V.Local.sGSUser.Declare(String)
+V.Local.sGUserid.Declare(String)
+V.Local.sMessage.Declare(String)
+V.Local.sMessageID.Declare(Long)
+V.Local.sLot.Declare(String)
+V.Local.sVendor.Declare(String)
+V.Local.sResults.Declare(String)
+V.Local.sLotQty.Declare(Float)
+V.Local.sLotQtytxt.Declare(String)
+V.Local.sItemHistoryLotQty.Declare(Long)
+V.Local.scounter.Declare(Long)
+V.Local.stransIDnew.Declare(String)
+V.Local.snewlot.Declare(String)
+V.Local.snewlotqty.Declare(Float)
+V.Local.snewlotqtytxt.Declare(String)
+V.Local.sbin.Declare(String)
+V.Local.slotcost.Declare(Float)
+V.Local.sheat.Declare(String)
+V.Local.sserial.Declare(String)
+V.Local.spallet1qty.Declare(Long)
+V.Local.spallet2qty.Declare(Long)
+V.Local.spallet3qty.Declare(Long)
+V.Local.spallet4qty.Declare(Long)
+V.Local.spallet5qty.Declare(Long)
+V.Local.spallet6qty.Declare(Long)
+V.Local.spallet7qty.Declare(Long)
+V.Local.spallet8qty.Declare(Long)
+V.Local.spallet9qty.Declare(Long)
+V.Local.spallet10qty.Declare(Long)
+V.Local.spalletid.Declare(Long)
+V.Local.scomment.Declare(String)
+v.Local.sKVA.Declare(String)
+v.Local.sHV.Declare(String)
+v.Local.sLV.Declare(String)
+v.Local.sTaps.Declare(String)
+v.Local.sType.Declare(String)
+v.Local.sUser1.Declare(String)
+v.Local.sUser2.Declare(String)
+v.Local.sUser3.Declare(String)
+v.Local.sUser4.Declare(String)
+v.Local.sUser5.Declare(String)
+v.Local.sUser6.Declare(String)
+v.Local.sUser7.Declare(String)
+v.Local.slastlot.Declare(String)
+V.Local.srptLoc.Declare(String)
+V.Local.iBI.Declare(String)
+v.Local.sUseEstflag.Declare(String)
+v.Local.sWOestMqty.Declare(String)
+
+'execute if WIR200 hook for A10 transaction is active for 31908
+'J55 issue to WO
+F.Intrinsic.Control.If(v.Caller.Hook,=,"31908")
+v.Local.sTransID.Set(v.Passed.LINE-ID)
+V.Local.sTransSfx.Set("0000")
+V.Local.sPrinter.Set("")
+
+	F.Intrinsic.String.Build("Select Field_1, Field_2, Field_3, Field_4, Field_5, Field_6, Field_7, Field_8, Field_9, LABEL_PRINTER, WIRELESS_LINE.Trans_Type from WIRELESS_LINE LEFT JOIN WIRELESS_HDR ON WIRELESS_LINE.TRANS_ID=WIRELESS_HDR.TRANS_ID where WIRELESS_LINE.TRANS_ID = '{0}'",V.Local.sTransID,V.Local.sQuery)
+	Function.ODBC.Connection!Conx.OpenRecordsetRO("rstWIR",V.Local.squery)
+	V.Local.sTransType.Set(V.ODBC.Conx!rstWIR.FieldValTrim!Trans_Type)
+	V.Local.sLotQty.Set(V.ODBC.Conx!rstWIR.FieldValTrim!Field_4)
+	F.Intrinsic.String.Concat(V.Local.slotqty,"0000",V.Local.slotqtytxt)
+	V.Local.sBin.Set(V.ODBC.Conx!rstWIR.FieldValTrim!Field_7)
+	V.Local.sserial.Set(V.ODBC.Conx!rstWIR.FieldValTrim!Field_9)
+	V.Local.sLot.Set(V.ODBC.Conx!rstWIR.FieldValTrim!Field_6)
+	V.Local.sheat.Set(V.ODBC.Conx!rstWIR.FieldValTrim!Field_8)
+	V.Local.sJobSuffix.Set(V.ODBC.Conx!rstWIR.FieldValTrim!Field_5)
+	F.Intrinsic.String.Left(V.Local.sJobSuffix,6,V.Local.sJob)
+	F.Intrinsic.String.Mid(V.Local.sJobSuffix,7,3,V.Local.sSuffix)
+	F.Intrinsic.String.Mid(V.Local.sJobSuffix,10,6,V.Local.sSeq)
+	V.Local.sPart.Set(V.ODBC.Conx!rstWIR.FieldValTrim!Field_1)
+	V.Local.sPartRev.Set(V.ODBC.Conx!rstWIR.FieldValTrim!Field_2)
+	V.Local.sPartloc.Set(V.ODBC.Conx!rstWIR.FieldValTrim!Field_3)
+	V.Local.sUPID.Set(V.ODBC.Conx!rstWIR.FieldValTrim!LABEL_PRINTER)
+
+F.ODBC.Conx!rstWIR.Close
+
+'Get userid
+	F.Intrinsic.String.Build("Select USER_ID from WIRELESS_HDR where TRANS_ID = '{0}'",V.Local.sTransID,V.Local.sQuery)
+	Function.ODBC.Connection!Conx.OpenRecordsetRO("rstWIR1",V.Local.squery)
+	V.Local.sUID.Set(V.ODBC.Conx!rstWIR1.FieldVal!USER_ID)
+	F.odbc.Conx!rstWIR1.Close
+
+'WRITE J55 TRANSACTIONS TO WIRELESS TABLES
+
+V.Local.squery.Set("Select TOP 1 TRANS_ID from WIRELESS_HDR ORDER BY TRANS_ID DESC")
+	Function.ODBC.Connection!Conx.OpenRecordsetRO("WIR8",V.Local.squery)
+	F.Intrinsic.Control.If(V.ODBC.Conx!WIR8.EOF,=,False)
+	V.Local.stransidnew.Set(V.ODBC.Conx!WIR8.FieldVALTRIM!TRANS_ID)
+	F.Intrinsic.Math.Add(V.Local.stransidnew,1,V.Local.stransIDnew)
+	F.Intrinsic.String.LPad(V.Local.stransIDnew,"0",9,V.Local.stransIDnew)
+	F.ODBC.Conx!WIR8.Close
+	F.Intrinsic.Control.EndIf
+
+'WRITE TO WIRELESS_HDR
+V.Local.sQuery.Set("SELECT * from WIRELESS_HDR")
+Function.ODBC.Connection!Conx.OpenRecordsetRW("rstNew",V.Local.sQuery)
+
+		Function.ODBC.Conx!rstNew.AddNew
+		Function.ODBC.Conx!rstNew.Set!TRANS_ID(V.Local.stransIDnew)
+		Function.ODBC.Conx!rstNew.Set!TRANS_TYPE("J55")
+		Function.ODBC.Conx!rstNew.Set!ATTEMPTED_DATE("00000000")
+		Function.ODBC.Conx!rstNew.Set!ATTEMPTED_TIME("00000000")
+		Function.ODBC.Conx!rstNew.Set!ATTEMPTED_FLAG("Y")
+		Function.ODBC.Conx!rstNew.Set!LABEL_PRINTER(V.Local.sUPID)
+		Function.ODBC.Conx!rstNew.Set!USER_ID(V.Local.sUID)
+		Function.ODBC.Conx!rstNew.Set!BATCH(0)
+		F.ODBC.Conx!rstNew.Update
+		F.ODBC.Conx!rstNew.Close
+		
+'WRITE TO WIRELESS_LINE
+V.Local.sQuery.Set("SELECT * from WIRELESS_LINE")
+Function.ODBC.Connection!Conx.OpenRecordsetRW("rstNew1",V.Local.sQuery)
+
+		Function.ODBC.Conx!rstNew1.AddNew
+		Function.ODBC.Conx!rstNew1.Set!TRANS_ID(V.Local.stransIDnew)
+		Function.ODBC.Conx!rstNew1.Set!SEQ("0000")
+		Function.ODBC.Conx!rstNew1.Set!TRANS_TYPE("J55")
+
+'PART/REV/LOC
+		Function.ODBC.Conx!rstNew1.Set!FIELD_1(V.Local.sPart)
+		Function.ODBC.Conx!rstNew1.Set!FIELD_2(V.Local.sPartRev)
+		Function.ODBC.Conx!rstNew1.Set!FIELD_3(V.Local.sPartloc)
+		Function.ODBC.Conx!rstNew1.Set!FIELD_4(V.Local.sLotQtytxt)
+
+'BIN
+		Function.ODBC.Conx!rstNew1.Set!FIELD_6(V.Local.sbin)
+'Lot
+	Function.ODBC.Conx!rstNew1.Set!FIELD_5(V.Local.sLot)
+'Heat
+	Function.ODBC.Conx!rstNew1.Set!FIELD_7(V.Local.sheat)
+'Serial
+	Function.ODBC.Conx!rstNew1.Set!FIELD_8(V.Local.sserial)
+'JOB/SUFFIX/SEQUENCE
+		Function.ODBC.Conx!rstNew1.Set!FIELD_9(V.Local.sJob)
+		Function.ODBC.Conx!rstNew1.Set!FIELD_10(V.Local.sSuffix)
+		Function.ODBC.Conx!rstNew1.Set!FIELD_11(V.Local.sSeq)
+		Function.ODBC.Conx!rstNew1.Set!FIELD_12("1")
+		Function.ODBC.Conx!rstNew1.Set!ERROR_ID(0)
+		F.ODBC.Conx!rstNew1.Update
+		F.ODBC.Conx!rstNew1.Close
+
+'REMOVE ATTEMPTED_FLAG FOR WIREPOLL TO PROCESS
+F.Intrinsic.String.Build("UPDATE WIRELESS_HDR SET ATTEMPTED_FLAG= '' WHERE TRANS_ID = '{0}'",V.Local.stransIDnew,V.Local.squery)
+F.ODBC.Connection!Conx.Execute(V.Local.squery)
+
+F.Intrinsic.String.Build("Successful J55 request for JSS: {0} - {1} - {2} Lot {4} Serial {5} Qty: {3} ",V.Local.sJob,V.Local.sSuffix,V.Local.sSeq,V.local.slotqty,V.local.slot,v.Local.sserial, V.Local.sResults)
+F.Global.Mobile.setcustomresult(v.Caller.CompanyCode,v.Local.sTransID,v.Local.sResults)		
+				
+F.ODBC.Connection!Conx.Close
+
+'---------------------------------------------------------------------------------------------------------------------------------------------
+
+'execute GAB if for custom mobile transaction id 1-5 (39001-39005)
+'write A10 stand alone receipt to inventory transaction
+F.Intrinsic.Control.Else
+
+V.Local.sTransID.Set(V.Passed.DATA-TRANSID)
+V.Local.sTransSfx.Set("0000")
+V.Local.sPrinter.Set("")
+v.Local.sbin.Set("RECV")
+
+	F.Intrinsic.String.Build("Select Field_1, Field_2, Field_3, Field_4, Field_5, Field_6, Field_7, Field_8, Field_9, Field_10, Field_11, Field_12, Field_13,Field_14,Field_15, Field_16,Trans_Type from WIRELESS_LINE where TRANS_ID = '{0}'",V.Local.sTransID,V.Local.sQuery)
+	Function.ODBC.Connection!Conx.OpenRecordsetRO("rstWIR",V.Local.squery)
+	V.Local.sTransType.Set(V.ODBC.Conx!rstWIR.FieldValTrim!Trans_Type)
+	v.Local.sserial.Set(V.ODBC.Conx!rstWIR.FieldValTrim!Field_2)
+	V.Local.sLotQty.Set(V.ODBC.Conx!rstWIR.FieldValTrim!Field_3)	
+	V.Local.sJobSuffix.Set(V.ODBC.Conx!rstWIR.FieldValTrim!Field_1)
+	F.Intrinsic.String.Left(V.Local.sJobSuffix,2,V.Local.sPrefix)
+	F.Intrinsic.Control.If(V.Local.sPrefix,=,"%/")
+		F.Intrinsic.String.Mid(V.Local.sJobSuffix,3,6,V.Local.sJob)
+		F.Intrinsic.String.Mid(V.Local.sJobSuffix,9,3,V.Local.sSuffix)
+		F.Intrinsic.String.Mid(V.Local.sJobSuffix,12,6,V.Local.sSeq)
+	F.Intrinsic.Control.ElseIf(V.Local.sPrefix,=,"$%")
+		F.Intrinsic.String.Mid(V.Local.sJobSuffix,3,6,V.Local.sJob)
+		F.Intrinsic.String.Mid(V.Local.sJobSuffix,9,3,V.Local.sSuffix)
+		F.Intrinsic.String.Mid(V.Local.sJobSuffix,12,6,V.Local.sSeq)
+	F.Intrinsic.Control.Else
+		F.Intrinsic.String.Left(V.Local.sJobSuffix,6,V.Local.sJob)
+		F.Intrinsic.String.Mid(V.Local.sJobSuffix,7,3,V.Local.sSuffix)
+		F.Intrinsic.String.Mid(V.Local.sJobSuffix,10,6,V.Local.sSeq)
+	F.Intrinsic.Control.EndIf
+	Function.Intrinsic.Debug.Stop
+	f.Intrinsic.String.Build("{0}{1}{2}",v.Local.sJob,v.Local.sSuffix,v.Local.sSeq,v.Local.scomment)
+	'V.Local.sUseEstflag.Set(V.ODBC.Conx!rstWIR.FieldValTrim!Field_3)
+	F.ODBC.Conx!rstWIR.Close
+
+	'validate job-suffix-seq
+	F.Intrinsic.String.Build("Select * FROM V_JOB_OPERATIONS WHERE LMO = 'M' AND JOB = '{0}' AND SUFFIX = '{1}' AND SEQ = '{2}'",V.Local.sJob,V.Local.sSuffix,V.Local.sSeq,V.Local.sQuery)
+		Function.ODBC.Connection!Conx.OpenRecordsetRO("rstOPS",V.Local.squery)
+			F.Intrinsic.Control.If(V.ODBC.Conx!rstOPS.EOF,=,True)
+				F.Intrinsic.String.Concat("<====FAILED====> Invalid material seq for JSS: ",V.Local.sJob,v.Local.sSuffix,v.Local.sSeq,V.Local.sResults)
+				F.Global.Mobile.setcustomresult(v.Caller.CompanyCode,v.Local.sTransID,v.Local.sResults)
+				f.Intrinsic.Control.CallSub(close)	
+			f.Intrinsic.Control.Else
+				V.Local.sGSSPart.Set(V.ODBC.Conx!rstOPS.FieldValTrim!PART)	
+				'V.Local.sWOestMqty.Set(V.ODBC.Conx!rstOPS.FieldValTrim!HOURS_ESTIMATED)	
+			F.Intrinsic.Control.EndIf
+			F.ODBC.Conx!rstOPS.Close	
+			
+	'Get userid
+	F.Intrinsic.String.Build("Select LABEL_PRINTER,USER_ID from WIRELESS_HDR where TRANS_ID = '{0}'",V.Local.sTransID,V.Local.sQuery)
+	Function.ODBC.Connection!Conx.OpenRecordsetRO("rstWIR1",V.Local.squery)
+	V.Local.sUID.Set(V.ODBC.Conx!rstWIR1.FieldVal!USER_ID)
+	V.Local.sPrinter.Set(v.ODBC.Conx!rstwir1.FieldVal!LABEL_PRINTER)
+	F.odbc.Conx!rstWIR1.Close
+
+	'Set part number with rev
+	f.Intrinsic.String.Left(v.Local.sGSSPart,17,v.Local.sPart)
+	f.Intrinsic.String.Mid(v.Local.sGSSPart,18,3,v.Local.sPartRev)
+
+	'Validate part number with rev and loc exists
+	F.Intrinsic.String.Build("SELECT PART,LOCATION FROM V_INVENTORY_MSTR WHERE PART = '{0}' AND LOCATION = '{1}'",V.Local.sGSSPart,V.Local.sPartloc,V.local.squery)
+	Function.ODBC.Connection!Conx.OpenRecordsetRO("rstWIR3",V.Local.squery)
+	F.Intrinsic.Control.If(V.ODBC.Conx!rstWIR3.EOF,=,False)
+		'continue and write A10 to wireless tables
+	F.Intrinsic.Control.else
+		'Display error
+		F.Intrinsic.String.Build("FAILED: Part {0} and Location {1} does NOT exist in inventory notify supervisor.",V.Local.sGSSPart,V.Local.sPartloc,V.Local.sResults)
+		F.Global.Mobile.setcustomresult(v.Caller.CompanyCode,v.Local.sTransID,v.Local.sResults)
+		F.Intrinsic.Control.End
+	F.Intrinsic.Control.EndIf
+	F.ODBC.Conx!rstWIR3.Close
+
+'WRITE STAND ALONE Receipt A10 
+
+	'find last wireless trans id and set for new trans
+	V.Local.squery.Set("Select TOP 1 TRANS_ID from WIRELESS_HDR ORDER BY TRANS_ID DESC")
+	Function.ODBC.Connection!Conx.OpenRecordsetRO("WIR8",V.Local.squery)
+	F.Intrinsic.Control.If(V.ODBC.Conx!WIR8.EOF,=,False)
+	V.Local.stransidnew.Set(V.ODBC.Conx!WIR8.FieldVALTRIM!TRANS_ID)
+	F.Intrinsic.Math.Add(V.Local.stransidnew,1,V.Local.stransIDnew)
+	F.Intrinsic.String.LPad(V.Local.stransIDnew,"0",9,V.Local.stransIDnew)
+	F.ODBC.Conx!WIR8.Close
+	F.Intrinsic.Control.EndIf
+
+'WRITE A10 TRANSACTIONS TO WIRELESS TABLES
+'Receipt
+'WRITE TO WIRELESS_HDR
+V.Local.sQuery.Set("SELECT * from WIRELESS_HDR")
+Function.ODBC.Connection!Conx.OpenRecordsetRW("rstNew",V.Local.sQuery)
+
+		Function.ODBC.Conx!rstNew.AddNew
+		Function.ODBC.Conx!rstNew.Set!TRANS_ID(V.Local.stransIDnew)
+		Function.ODBC.Conx!rstNew.Set!TRANS_TYPE("A10")
+		Function.ODBC.Conx!rstNew.Set!ATTEMPTED_DATE("00000000")
+		Function.ODBC.Conx!rstNew.Set!ATTEMPTED_TIME("00000000")
+		Function.ODBC.Conx!rstNew.Set!ATTEMPTED_FLAG("Y")
+		Function.ODBC.Conx!rstNew.Set!LABEL_PRINTER(V.Local.sPrinter)
+		Function.ODBC.Conx!rstNew.Set!USER_ID(V.Local.sUID)
+		Function.ODBC.Conx!rstNew.Set!BATCH(0)
+		F.ODBC.Conx!rstNew.Update
+		F.ODBC.Conx!rstNew.Close
+'WRITE TO WIRELESS_LINE
+V.Local.sQuery.Set("SELECT * from WIRELESS_LINE")
+Function.ODBC.Connection!Conx.OpenRecordsetRW("rstNew1",V.Local.sQuery)
+
+		Function.ODBC.Conx!rstNew1.AddNew
+		Function.ODBC.Conx!rstNew1.Set!TRANS_ID(V.Local.stransIDnew)
+		Function.ODBC.Conx!rstNew1.Set!SEQ("0000")
+		Function.ODBC.Conx!rstNew1.Set!TRANS_TYPE("A10")
+'PART
+		Function.ODBC.Conx!rstNew1.Set!FIELD_1(V.Local.sPart)
+'REV
+		Function.ODBC.Conx!rstNew1.Set!FIELD_2(V.Local.sPartRev)
+'LOC		
+		Function.ODBC.Conx!rstNew1.Set!FIELD_3(V.Local.sPartloc)
+'QUANTITY	
+		F.Intrinsic.String.ConverttoString(V.Local.sLotQty,V.Local.sLotQtytxt)
+		F.Intrinsic.String.Format(V.local.sLotQtytxt,"####.0000",V.local.sLotQtytxt)
+		Function.ODBC.Conx!rstNew1.Set!FIELD_4(V.Local.slotqtytxt)				
+'COMMENT	
+		Function.ODBC.Conx!rstNew1.Set!FIELD_5(V.Local.scomment)
+'LOT
+		Function.ODBC.Conx!rstNew1.Set!FIELD_6(V.Local.slot)
+'BIN
+		Function.ODBC.Conx!rstNew1.Set!FIELD_7(V.Local.sbin)
+'HEAT
+		Function.ODBC.Conx!rstNew1.Set!FIELD_8(V.Local.sHEAT)
+'SERIAL
+		Function.ODBC.Conx!rstNew1.Set!FIELD_9(V.Local.sSERIAL)
+		Function.ODBC.Conx!rstNew1.Set!FIELD_10("Receipt")
+		Function.ODBC.Conx!rstNew1.Set!FIELD_11("N")
+		Function.ODBC.Conx!rstNew1.Set!ERROR_ID(0)
+		F.ODBC.Conx!rstNew1.Update
+		F.ODBC.Conx!rstNew1.Close
+
+'REMOVE ATTEMPTED_FLAG FOR WIREPOLL TO PROCESS
+F.Intrinsic.String.Build("UPDATE WIRELESS_HDR SET ATTEMPTED_FLAG= '' WHERE TRANS_ID = '{0}'",V.Local.stransIDnew,V.Local.squery)
+F.ODBC.Connection!Conx.Execute(V.Local.squery)
+
+'Successful comment back to scanner
+	F.Intrinsic.String.Build("SUCCESSFULL Receipt of Part: {0} Qty: {1} Issued to WO: {2}.",V.Local.sGSSPart,v.Local.sLotQty,v.Local.sJobSuffix,v.Local.sResults)
+	F.Global.Mobile.setcustomresult(v.Caller.CompanyCode,v.Local.sTransID,v.Local.sResults)
+
+F.ODBC.Connection!Conx.Close
+'F.ODBC.Connection!Cony.Close
+
+f.Intrinsic.Control.EndIf
+
+Program.Sub.Main.End
+
+Program.Sub.close.Start
+F.ODBC.Connection!Conx.Close
+F.Intrinsic.Control.End
+Program.Sub.close.End
+
+Program.Sub.Comments.Start
+${$0$}$$}$$}$12:00:00 AM$}$False
+${$5$}$2.0.0.0$}$2
+${$6$}$bstevens$}$20240313165740084$}$3Pg7+K2MGztoXyjxMVZqWaM5g3GOUsSNufBpXkESEJQYWGBM5E1qmF6fWFS7a+tCeo2gZF4N8GTFDrFCheBhJg==
+Program.Sub.Comments.End
